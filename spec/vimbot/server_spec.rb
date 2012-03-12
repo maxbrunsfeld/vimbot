@@ -2,8 +2,8 @@ require 'spec_helper'
 
 describe Vimbot::Server do
   let(:vim_binary) { 'mvim' }
-  let(:vimrc)   { nil }
-  let(:gvimrc)  { nil }
+  let(:vimrc)  { nil }
+  let(:gvimrc) { nil }
   let(:server) do
     Vimbot::Server.new(
       :vim    => vim_binary,
@@ -14,7 +14,7 @@ describe Vimbot::Server do
 
   subject { server }
 
-  before(:all) do
+  before do
     @initial_vim_server_names = running_vim_server_names
     @initial_vim_commands = running_vim_commands
   end
@@ -60,7 +60,7 @@ describe Vimbot::Server do
       let(:vimrc) { File.expand_path('../../fixtures/foo.vim', __FILE__) }
 
       it "uses the specificied vimrc" do
-        new_vim_commands.first.should match /-u #{vimrc}/
+        expect_vimrc(vimrc)
       end
 
       context "and no gvimrc is specified" do
@@ -68,7 +68,7 @@ describe Vimbot::Server do
 
         it "uses an empty gvimrc, since the default gvimrc might depend on the default vimrc" do
           empty_gvimrc = ::Vimbot::Server::EMPTY_GVIMRC
-          new_vim_commands.first.should match /-U #{empty_gvimrc}/
+          expect_gvimrc(empty_gvimrc)
         end
       end
 
@@ -76,7 +76,7 @@ describe Vimbot::Server do
         let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
 
         it "uses the specified gvimrc file" do
-          new_vim_commands.first.should match /-U #{gvimrc}/
+          expect_gvimrc(gvimrc)
         end
       end
     end
@@ -85,14 +85,14 @@ describe Vimbot::Server do
       let(:vimrc) { nil }
 
       it "uses the default vimrc" do
-        new_vim_commands.first.should match /-u #{File.expand_path("~/.vimrc")}/
+        expect_vimrc(File.expand_path("~/.vimrc"))
       end
 
       context "and no gvimrc is specified" do
         let(:gvimrc) { nil }
 
         it "uses the default gvimrc" do
-          new_vim_commands.first.should match /-U #{File.expand_path("~/.gvimrc")}/
+          expect_gvimrc(File.expand_path("~/.gvimrc"))
         end
       end
 
@@ -100,9 +100,17 @@ describe Vimbot::Server do
         let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
 
         it "uses the specified gvimrc" do
-          new_vim_commands.first.should match /-U #{gvimrc}/
+          expect_gvimrc(gvimrc)
         end
       end
+    end
+
+    def expect_vimrc(vimrc)
+      new_vim_commands.first.should match /-u #{vimrc}/
+    end
+
+    def expect_gvimrc(gvimrc)
+      new_vim_commands.first.should match /-U #{gvimrc}/
     end
   end
 
