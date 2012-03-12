@@ -1,13 +1,4 @@
-# Vimbot - Test Drive Vim from Ruby
-
-## Installation
-To install Vimbot run
-
-    gem install vimbot
-
-or clone this reposity and run
-
-    rake install
+# Vimbot - test drive vim from ruby
 
 ## Dependencies
 Vimbot is developed with Vim 7.3 and Ruby 1.9.2.
