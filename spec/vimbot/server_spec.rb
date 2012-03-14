@@ -1,6 +1,8 @@
 require 'spec_helper'
 
 describe Vimbot::Server do
+  subject { server }
+
   let(:vim_binary) { 'mvim' }
   let(:vimrc)  { nil }
   let(:gvimrc) { nil }
@@ -11,8 +13,6 @@ describe Vimbot::Server do
       :gvimrc => gvimrc
     )
   end
-
-  subject { server }
 
   before do
     @initial_vim_server_names = running_vim_server_names
@@ -131,15 +131,27 @@ describe Vimbot::Server do
       server.eval('"foo" . "bar" . "baz"').should == "foobarbaz"
     end
 
-    describe "with an invalid expression" do
-      it "returns false" do
-        server.eval("1 + []").should be_false
-        server.eval("'foo").should be_false
+    context "with an expression that yields an empty string" do
+      it "returns an empty string" do
+        server.eval("[]").should == ""
       end
 
-      it "silences standard error" do
-        server.should_receive(:`).with(/2>\/dev\/null/).and_return("")
+      it "doesn't add to the server's errors" do
+        server.eval("[]")
+        server.errors.should be_empty
+      end
+    end
+
+    context "with an invalid expression" do
+      before { server.errors.clear }
+
+      it "returns false" do
+        server.eval("1 + []").should be_false
+      end
+
+      it "adds an error to the server's errors" do
         server.eval("1 + []")
+        server.errors.length.should == 1
       end
     end
   end

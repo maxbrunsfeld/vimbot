@@ -5,11 +5,12 @@ module Vimbot
     DEFAULT_GVIMRC = File.expand_path("~/.gvimrc")
     EMPTY_GVIMRC   = File.expand_path("../../../vim/empty.vim", __FILE__)
 
-    attr_reader :vim_binary, :vimrc, :gvimrc
+    attr_reader :vim_binary, :vimrc, :gvimrc, :errors
     @@next_id = 0
 
     def initialize(args={})
       @@next_id += 1
+      @errors = []
       @id = @@next_id
       @vim_binary = DEFAULT_VIM_BINARY
       @vimrc  = args[:vimrc]  || DEFAULT_VIMRC
@@ -36,8 +37,14 @@ module Vimbot
     end
 
     def eval(expression)
-      output = `#{shell_command} --remote-expr \"#{escape(expression)}\" 2>/dev/null`
-      (output.length > 0) ? output.gsub(/\n$/, "") : false
+      command = "#{shell_command} --remote-expr \"#{escape(expression)}\""
+      out, err, stat = Open3.capture3(command)
+      if err.empty?
+        out.gsub(/\n$/, "")
+      else
+        errors.push(err)
+        nil
+      end
     end
 
     def name
