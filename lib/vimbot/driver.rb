@@ -10,7 +10,32 @@ class Vimbot::Driver
   end
 
   def normal(*commands)
-    run ["<Esc>"].concat(commands)
+    run(["<Esc>"] + commands + ["<Esc>"])
+  end
+
+  def insert(*strings)
+    run(["<Esc>i"] + strings + ["<Esc>"])
+  end
+
+  def append(*strings)
+    run(["<Esc>a"] + strings + ["<Esc>"])
+  end
+
+  def exec(command)
+    temp_reg = "x"
+    run "<Esc>"
+    run ":let save_register = @#{temp_reg}<CR>"
+    run ":redir @#{temp_reg}<CR>"
+    run ":", command, "<CR>"
+    result = register(temp_reg)
+  end
+
+  def current_line
+    eval("getline('.')")
+  end
+
+  def register(reg_name)
+    eval("getreg('#{reg_name}')")
   end
 
   def mode

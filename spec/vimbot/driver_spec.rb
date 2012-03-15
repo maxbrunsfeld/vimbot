@@ -27,6 +27,7 @@ describe Vimbot::Driver do
   describe "running commands" do
     before(:all) { driver.start }
     after(:all)  { driver.stop }
+    before { driver.clear_buffer }
 
     describe "#run" do
       it "concatenates its arguments before sending them to the server" do
@@ -73,27 +74,75 @@ describe Vimbot::Driver do
       end
     end
 
-    describe "#insert" do
-      it "types the given text in insert mode" do
-      end
-
-      it "exits insert mode" do
-      end
-    end
-
     describe "#current_line" do
       it "returns the text of the current line" do
         driver.run "i", "foo"
-        driver.eval("getline('.')").should_not be_empty
+        driver.current_line.should == "foo"
+      end
+    end
+
+    describe "#normal" do
+      it "runs the given keystrokes after returning to normal mode" do
+        driver.run "ifoobar"
+        driver.normal "xx"
+        driver.current_line.should == "foob"
+      end
+
+      it "returns to normal mode afterward" do
+        driver.normal "i"
+        driver.should be_in_normal_mode
+      end
+    end
+
+    describe "#insert" do
+      before { driver.insert "First", "Second" }
+      its(:current_line) { should == "FirstSecond" }
+      it { should_not be_in_insert_mode }
+    end
+
+    describe "#append" do
+      before do
+        driver.insert "First"
+        driver.append "Second", "Third"
+      end
+
+      its(:current_line) { should == "FirstSecondThird"}
+      it { should_not be_in_insert_mode }
+    end
+
+    describe "#register" do
+      before { driver.insert "I belong in x", "<CR>", "I belong in default" }
+
+      it "returns the contents of the given register" do
+        driver.run "yy"
+        driver.register("\"").should == "I belong in default"
+
+        driver.run "k", "\"xyy"
+        driver.register("x").should == "I belong in x"
+      end
+    end
+
+    describe "#exec" do
+      before { driver.insert "foo" }
+
+      it "executes the given vim command" do
+        driver.exec "s/foo/bar"
+        driver.current_line.should == "bar"
+      end
+
+      it "returns the output of the command" do
+        driver.run "yy"
+        output = driver.exec "registers"
+        output.should_not be_empty
       end
     end
 
     describe "#clear_buffer" do
       it "deletes all text in the buffer" do
-        driver.run "i", "foo"
-        driver.eval("getline('.')").should_not be_empty
+        driver.run "i", "foo", "<CR>", "bar"
+        driver.current_line.should_not be_empty
         driver.clear_buffer
-        driver.eval("getline('.')").should be_empty
+        driver.current_line.should be_empty
       end
     end
   end
