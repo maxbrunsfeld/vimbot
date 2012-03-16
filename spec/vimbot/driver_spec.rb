@@ -123,17 +123,18 @@ describe Vimbot::Driver do
     end
 
     describe "#exec" do
-      before { driver.insert "foo" }
-
       it "executes the given vim command" do
+        driver.insert "foo"
+        driver.current_line.should == "foo"
         driver.exec "s/foo/bar"
         driver.current_line.should == "bar"
       end
 
       it "returns the output of the command" do
-        driver.run "yy"
-        output = driver.exec "registers"
-        output.should_not be_empty
+        driver.exec("echo 'hello world'").should  == "hello world"
+
+        driver.insert "jello\n", "jello\n", "jello\n"
+        driver.exec("%s/jello/pudding").should == "3 substitutions on 3 lines"
       end
     end
 

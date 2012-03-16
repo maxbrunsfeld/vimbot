@@ -14,20 +14,19 @@ class Vimbot::Driver
   end
 
   def insert(*strings)
-    run(["<Esc>i"] + strings + ["<Esc>"])
+    normal(["i"] + strings)
   end
 
   def append(*strings)
-    run(["<Esc>a"] + strings + ["<Esc>"])
+    normal(["a"] + strings)
   end
 
   def exec(command)
-    temp_reg = "x"
-    run "<Esc>"
-    run ":let save_register = @#{temp_reg}<CR>"
-    run ":redir @#{temp_reg}<CR>"
-    run ":", command, "<CR>"
-    result = register(temp_reg)
+    normal
+    run ":redir => vimbot_temp<CR>"
+    run ":silent ", command, "<CR>"
+    run ":redir END<CR>"
+    eval("vimbot_temp").gsub(/^\n/, "")
   end
 
   def current_line
