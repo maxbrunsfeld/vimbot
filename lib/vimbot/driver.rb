@@ -30,6 +30,10 @@ module Vimbot
       eval("vimbot_temp").gsub(/^\n/, "")
     end
 
+    def source(file)
+      exec "source #{file}"
+    end
+
     def current_line
       eval("getline('.')")
     end

@@ -138,6 +138,14 @@ describe Vimbot::Driver do
       end
     end
 
+    describe "#source" do
+      it "sources the given vimscript file" do
+        path = File.expand_path("../../fixtures/foo.vim", __FILE__)
+        driver.source path
+        driver.eval("g:foo").should == "1"
+      end
+    end
+
     describe "#clear_buffer" do
       it "deletes all text in the buffer" do
         driver.run "i", "foo", "<CR>", "bar"
