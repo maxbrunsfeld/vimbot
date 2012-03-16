@@ -37,13 +37,11 @@ module Vimbot
     end
 
     def eval(expression)
-      command = "#{shell_command} --remote-expr \"#{escape(expression)}\""
-      out, err, stat = Open3.capture3(command)
-      if err.empty?
-        out.gsub(/\n$/, "")
+      output, error = Open3.capture3 "#{shell_command} --remote-expr \"#{escape(expression)}\""
+      if error.empty?
+        output.gsub(/\n$/, "")
       else
-        errors.push(err)
-        nil
+        errors.push(error) && nil
       end
     end
 
