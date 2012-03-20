@@ -1,43 +1,32 @@
 module Vimbot
   class Server
-    DEFAULT_VIM_BINARY = "mvim"
-    DEFAULT_VIMRC  = File.expand_path("~/.vimrc")
-    DEFAULT_GVIMRC = File.expand_path("~/.gvimrc")
-    EMPTY_GVIMRC   = File.expand_path("../../../vim/empty.vim", __FILE__)
-
     attr_reader :vim_binary, :vimrc, :gvimrc, :errors
-    @@next_id = 0
 
-    def initialize(args={})
-      @@next_id += 1
+    def initialize(options={})
       @errors = []
-      @id = @@next_id
-      @vim_binary = DEFAULT_VIM_BINARY
-      @vimrc  = args[:vimrc]  || DEFAULT_VIMRC
-      @gvimrc = args[:gvimrc] || (args[:vimrc] ? EMPTY_GVIMRC : DEFAULT_GVIMRC)
+      set_vim_binary(options[:vim_binary])
+      set_config_files(options[:vimrc], options[:gvimrc])
     end
 
     def start
-      unless @pid
-        @pid = fork { exec "#{shell_command} -f -u #{vimrc} -U #{gvimrc}" }
-        sleep 0.25 until up?
-      end
+      return if @pid
+      @pid = fork { exec start_command }
+      wait_until_up
     end
 
     def stop
-      if @pid
-        run "<Esc>:qall!<CR>"
-        Process.wait(@pid)
-        @pid = nil
-      end
+      return unless @pid
+      run "<Esc>:qall!<CR>"
+      Process.wait(@pid)
+      @pid = nil
     end
 
     def run(command)
-      system "#{shell_command} --remote-send \"#{escape(command)}\""
+      system "#{command_prefix} --remote-send \"#{escape(command)}\""
     end
 
     def eval(expression)
-      output, error = Open3.capture3 "#{shell_command} --remote-expr \"#{escape(expression)}\""
+      output, error = Open3.capture3 "#{command_prefix} --remote-expr \"#{escape(expression)}\""
       if error.empty?
         output.gsub(/\n$/, "")
       else
@@ -46,7 +35,11 @@ module Vimbot
     end
 
     def name
-      @name ||= "VIMBOT_#{@id}"
+      unless @name
+        @@next_id = @@next_id + 1
+        @name = "VIMBOT_#{@@next_id}"
+      end
+      @name
     end
 
     def up?
@@ -55,11 +48,59 @@ module Vimbot
 
     private
 
+    @@next_id = 0
+
+    DEFAULT_VIM_BINARY = "mvim"
+    EMPTY_GVIMRC       = File.expand_path("../../../vim/empty.vim", __FILE__)
+
+    def wait_until_up
+      sleep 0.25 until up?
+    end
+
+    def set_vim_binary(binary)
+      @vim_binary = binary || DEFAULT_VIM_BINARY
+      unless binary_supports_server_mode?
+        raise "Error - vim binary '#{binary}' does not support client-server mode."
+      end
+    end
+
+    def set_config_files(vimrc, gvimrc)
+      @vimrc = vimrc
+      @gvimrc = gvimrc
+      if vimrc && !gvimrc
+        @gvimrc = EMPTY_GVIMRC
+      end
+    end
+
+    def binary_supports_server_mode?
+      !(`#{vim_binary} --help | grep -e --server`).empty?
+    end
+
+    def binary_has_no_fork_option?
+      !(`#{vim_binary} --help | grep -e --nofork`).empty?
+    end
+
+    def start_command
+      [command_prefix, no_fork_option, vimrc_option, gvimrc_option].compact.join(" ")
+    end
+
+    def no_fork_option
+      "--nofork" if binary_has_no_fork_option?
+    end
+
+    def gvimrc_option
+      "-U #{gvimrc}" if gvimrc
+    end
+
+    def vimrc_option
+      "-u #{vimrc}" if vimrc
+    end
+
     def escape(string)
       string.gsub(/"/, '\"')
     end
 
-    def shell_command
+    def command_prefix
       "#{vim_binary} --servername #{name}"
     end
 

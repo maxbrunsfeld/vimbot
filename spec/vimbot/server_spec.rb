@@ -1,36 +1,156 @@
 require 'spec_helper'
 
 describe Vimbot::Server do
+  let(:server) { Vimbot::Server.new }
   subject { server }
 
-  let(:vim_binary) { 'mvim' }
-  let(:vimrc)  { nil }
-  let(:gvimrc) { nil }
-  let(:server) do
-    Vimbot::Server.new(
-      :vim    => vim_binary,
-      :vimrc  => vimrc,
-      :gvimrc => gvimrc
-    )
+  describe "#initialize" do
+    let(:server) do
+      Vimbot::Server.new(
+        :vim_binary => vim_binary,
+        :vimrc => vimrc,
+        :gvimrc => gvimrc
+      )
+    end
+
+    let(:vim_binary) { nil }
+    let(:vimrc)  { nil }
+    let(:gvimrc) { nil }
+
+    before do
+      server.stub(:wait_until_up)
+      server.stub(:fork).and_yield
+    end
+
+    context "when a vim binary is specified" do
+      context "and the version supports client-server mode" do
+        let(:vim_binary) { File.expand_path("../../fixtures/fake_vim", __FILE__) }
+
+        it "uses the given vim binary" do
+          expect_vim_command_to_match /^#{vim_binary}/
+        end
+
+        context "when the version has a '--nofork' option" do
+          let(:vim_binary) { File.expand_path("../../fixtures/fake_vim", __FILE__) }
+
+          it "passes that option" do
+            expect_vim_command_to_match /--nofork/
+          end
+        end
+
+        context "when the version does not have a '--nofork' option" do
+          let(:vim_binary) { File.expand_path("../../fixtures/fake_vim_without_nofork", __FILE__) }
+
+          it "omits that option" do
+            expect_vim_command_not_to_match /--nofork/
+          end
+        end
+      end
+
+      context "and the binary does not support client-server mode" do
+        it "raises an exception" do
+          vim_binary = File.expand_path("../../fixtures/fake_vim_without_server_mode", __FILE__)
+          expect { Server.new(:vim_binary => vim_binary) }.to raise_error
+        end
+      end
+    end
+
+    context "when no vim binary is specified" do
+      xit "tries common names for vim binaries: vim, gvim and mvim" do
+      end
+
+      context "and some vim binary supports client-server mode" do
+        xit "uses that binary" do
+        end
+      end
+
+      context "and no vim-binary is found that supports client-server mode" do
+        xit "raises an exception" do
+        end
+      end
+    end
+
+    context "with custom vim config files" do
+      context "when a vimrc is specified" do
+        let(:vimrc) { File.expand_path('../../fixtures/foo.vim', __FILE__) }
+
+        it "uses the specificied vimrc" do
+          expect_vim_command_to_match /-u #{vimrc}/
+        end
+
+        context "and no gvimrc is specified" do
+          let(:gvimrc) { nil }
+
+          it "uses an empty gvimrc, since the default gvimrc might depend on the default vimrc" do
+            empty_gvimrc = ::Vimbot::Server::EMPTY_GVIMRC
+            expect_vim_command_to_match /#{empty_gvimrc}/
+          end
+        end
+
+        context "and a gvimrc is specified" do
+          let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
+
+          it "uses the specified gvimrc file" do
+            expect_vim_command_to_match /#{gvimrc}/
+          end
+        end
+      end
+
+      context "when no vimrc is specified" do
+        let(:vimrc) { nil }
+
+        it "uses the default vimrc" do
+          expect_vim_command_not_to_match /-u/
+        end
+
+        context "and no gvimrc is specified" do
+          let(:gvimrc) { nil }
+
+          it "uses the default gvimrc" do
+            expect_vim_command_not_to_match /-U/
+          end
+        end
+
+        context "and a gvimrc is specified" do
+          let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
+
+          it "uses the specified gvimrc" do
+            expect_vim_command_to_match /-U #{gvimrc}/
+          end
+        end
+      end
+    end
+
+    def expect_vim_command_to_match(pattern)
+      server.should_receive(:exec).once.with(pattern)
+      server.start
+    end
+
+    def expect_vim_command_not_to_match(pattern)
+      server.should_receive(:exec).once
+      server.should_not_receive(:exec).with(pattern)
+      server.start
+    end
   end
 
-  before do
-    @initial_vim_server_names = running_vim_server_names
-    @initial_vim_commands = running_vim_commands
+  describe "#name" do
+    it "is unique between instances" do
+      server.name.should include "VIMBOT"
+      server.name.should_not == Vimbot::Server.new.name
+    end
   end
 
   describe "#start" do
-    before { server.start }
+    before do
+      @initial_vim_server_names = running_vim_server_names
+      @initial_vim_commands = running_vim_commands
+      server.start
+    end
     after  { server.stop  }
 
     it { should be_up }
 
-    it "creates a unique name" do
-      server.name.should include "VIMBOT"
-      server.name.should_not == Vimbot::Server.new(:vim => vim_binary).name
-    end
-
-    it "starts a vim process with that server name" do
+    it "starts a vim process with its server name" do
       new_vim_commands.length.should == 1
       new_vim_server_names.length.should == 1
       new_vim_server_names.first.should == server.name
@@ -52,136 +172,73 @@ describe Vimbot::Server do
     end
   end
 
-  describe "custom vim binaries and vim configs" do
-    before { server.start }
-    after  { server.stop }
-
-    context "when a vimrc is specified" do
-      let(:vimrc) { File.expand_path('../../fixtures/foo.vim', __FILE__) }
-
-      it "uses the specificied vimrc" do
-        expect_vimrc(vimrc)
-      end
-
-      context "and no gvimrc is specified" do
-        let(:gvimrc) { nil }
-
-        it "uses an empty gvimrc, since the default gvimrc might depend on the default vimrc" do
-          empty_gvimrc = ::Vimbot::Server::EMPTY_GVIMRC
-          expect_gvimrc(empty_gvimrc)
-        end
-      end
-
-      context "and a gvimrc is specified" do
-        let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
-
-        it "uses the specified gvimrc file" do
-          expect_gvimrc(gvimrc)
-        end
-      end
-    end
-
-    context "when no vimrc is specified" do
-      let(:vimrc) { nil }
-
-      it "uses the default vimrc" do
-        expect_vimrc(File.expand_path("~/.vimrc"))
-      end
-
-      context "and no gvimrc is specified" do
-        let(:gvimrc) { nil }
-
-        it "uses the default gvimrc" do
-          expect_gvimrc(File.expand_path("~/.gvimrc"))
-        end
-      end
-
-      context "and a gvimrc is specified" do
-        let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
-
-        it "uses the specified gvimrc" do
-          expect_gvimrc(gvimrc)
-        end
-      end
-    end
-
-    def expect_vimrc(vimrc)
-      new_vim_commands.first.should match /-u #{vimrc}/
-    end
-
-    def expect_gvimrc(gvimrc)
-      new_vim_commands.first.should match /-U #{gvimrc}/
-    end
-  end
-
-  describe "#eval" do
+  context "with the server up" do
     before(:all) { server.start }
     after(:all)  { server.stop }
 
-    it "returns the result of the given vimscript expression" do
-      server.eval("8 + 1").should == "9"
-      server.eval("len([1, 2, 3, 4, 5])").should == "5"
-    end
-
-    it "handles expressions containing single quotes" do
-      server.eval("'foo' . 'bar' . 'baz'").should == "foobarbaz"
-    end
-
-    it "handles expressions containing double quotes" do
-      server.eval('"foo" . "bar" . "baz"').should == "foobarbaz"
-    end
-
-    context "with an expression that yields an empty string" do
-      it "returns an empty string" do
-        server.eval("[]").should == ""
+    describe "#eval" do
+      it "returns the result of the given vimscript expression" do
+        server.eval("8 + 1").should == "9"
+        server.eval("len([1, 2, 3, 4, 5])").should == "5"
       end
 
-      it "doesn't add to the server's errors" do
-        server.eval("[]")
-        server.errors.should be_empty
+      it "handles expressions containing single quotes" do
+        server.eval("'foo' . 'bar' . 'baz'").should == "foobarbaz"
+      end
+
+      it "handles expressions containing double quotes" do
+        server.eval('"foo" . "bar" . "baz"').should == "foobarbaz"
+      end
+
+      context "with an expression that yields an empty string" do
+        it "returns an empty string" do
+          server.eval("[]").should == ""
+        end
+
+        it "doesn't add to the server's errors" do
+          server.eval("[]")
+          server.errors.should be_empty
+        end
+      end
+
+      context "with an invalid expression" do
+        before { server.errors.clear }
+
+        it "returns false" do
+          server.eval("1 + []").should be_false
+        end
+
+        it "adds an entry to the server's errors" do
+          server.eval("1 + []")
+          server.errors.length.should == 1
+        end
       end
     end
 
-    context "with an invalid expression" do
-      before { server.errors.clear }
+    describe "#run" do
+      before { server.run "<Esc>dd" }
 
-      it "returns false" do
-        server.eval("1 + []").should be_false
+      it "sends the given keystrokes to the vim server" do
+        server.run "i"
+        server.run "foo"
+        current_line.should == "foo"
       end
 
-      it "adds an error to the server's errors" do
-        server.eval("1 + []")
-        server.errors.length.should == 1
+      it "handles commands containing single quotes" do
+        server.run "i"
+        server.run "who's house?"
+        current_line.should == "who's house?"
       end
-    end
-  end
 
-  describe "#run" do
-    before(:all) { server.start }
-    after(:all)  { server.stop }
+      it "handles expressions containing double quotes" do
+        server.run "i"
+        server.run 'foo "bar"'
+        current_line.should == 'foo "bar"'
+      end
 
-    before { server.run "<Esc>dd" }
-
-    it "sends the given keystrokes to the vim server" do
-      server.run "i"
-      server.run "foo"
-      current_line.should == "foo"
-    end
-
-    it "handles commands containing single quotes" do
-      server.run "i"
-      server.run "who's house?"
-      current_line.should == "who's house?"
-    end
-
-    it "handles expressions containing double quotes" do
-      server.run "i"
-      server.run 'foo "bar"'
-      current_line.should == 'foo "bar"'
-    end
-
-    def current_line
-      server.eval "getline('.')"
+      def current_line
+        server.eval "getline('.')"
+      end
     end
   end
 
@@ -198,6 +255,6 @@ describe Vimbot::Server do
   end
 
   def running_vim_server_names
-    `#{vim_binary} --serverlist`.split("\n")
+    `#{server.vim_binary} --serverlist`.split("\n")
   end
 end
