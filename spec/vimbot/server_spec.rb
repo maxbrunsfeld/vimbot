@@ -1,22 +1,21 @@
 require 'spec_helper'
 
 describe Vimbot::Server do
-  let(:server) { Vimbot::Server.new }
+  let(:server) do
+    Vimbot::Server.new(
+      :vim_binary => vim_binary,
+      :vimrc => vimrc,
+      :gvimrc => gvimrc
+    )
+  end
+
+  let(:vim_binary) { nil }
+  let(:vimrc)  { nil }
+  let(:gvimrc) { nil }
+
   subject { server }
 
   describe "#initialize" do
-    let(:server) do
-      Vimbot::Server.new(
-        :vim_binary => vim_binary,
-        :vimrc => vimrc,
-        :gvimrc => gvimrc
-      )
-    end
-
-    let(:vim_binary) { nil }
-    let(:vimrc)  { nil }
-    let(:gvimrc) { nil }
-
     before do
       server.stub(:wait_until_up)
       server.stub(:fork).and_yield
@@ -83,7 +82,7 @@ describe Vimbot::Server do
 
           it "uses an empty gvimrc, since the default gvimrc might depend on the default vimrc" do
             empty_gvimrc = ::Vimbot::Server::EMPTY_GVIMRC
-            expect_vim_command_to_match /#{empty_gvimrc}/
+            expect_vim_command_to_match /-U #{empty_gvimrc}/
           end
         end
 
@@ -91,7 +90,7 @@ describe Vimbot::Server do
           let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
 
           it "uses the specified gvimrc file" do
-            expect_vim_command_to_match /#{gvimrc}/
+            expect_vim_command_to_match /-U #{gvimrc}/
           end
         end
       end
@@ -146,7 +145,8 @@ describe Vimbot::Server do
       @initial_vim_commands = running_vim_commands
       server.start
     end
-    after  { server.stop  }
+
+    after { server.stop  }
 
     it { should be_up }
 
@@ -169,6 +169,22 @@ describe Vimbot::Server do
         new_vim_server_names.should be_empty
         new_vim_commands.should be_empty
       end
+    end
+
+    def new_vim_server_names
+      running_vim_server_names - @initial_vim_server_names
+    end
+
+    def new_vim_commands
+      running_vim_commands - @initial_vim_commands
+    end
+
+    def running_vim_commands
+      `ps ax -o command | grep vim | grep -v grep`.split("\n")
+    end
+
+    def running_vim_server_names
+      `#{server.vim_binary} --serverlist`.split("\n")
     end
   end
 
@@ -240,21 +256,5 @@ describe Vimbot::Server do
         server.eval "getline('.')"
       end
     end
-  end
-
-  def new_vim_server_names
-    running_vim_server_names - @initial_vim_server_names
-  end
-
-  def new_vim_commands
-    running_vim_commands - @initial_vim_commands
-  end
-
-  def running_vim_commands
-    `ps ax -o command | grep vim | grep -v grep`.split("\n")
-  end
-
-  def running_vim_server_names
-    `#{server.vim_binary} --serverlist`.split("\n")
   end
 end
