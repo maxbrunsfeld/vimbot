@@ -50,7 +50,7 @@ module Vimbot
 
     @@next_id = 0
 
-    DEFAULT_VIM_BINARY = "mvim"
+    DEFAULT_VIM_BINARIES = ["vim", "mvim", "gvim"]
     EMPTY_GVIMRC       = File.expand_path("../../../vim/empty.vim", __FILE__)
 
     def wait_until_up
@@ -58,9 +58,17 @@ module Vimbot
     end
 
     def set_vim_binary(binary)
-      @vim_binary = binary || DEFAULT_VIM_BINARY
-      unless binary_supports_server_mode?
-        raise "Error - vim binary '#{binary}' does not support client-server mode."
+      if binary
+        if binary_supports_server_mode?(binary)
+          @vim_binary = binary
+        else
+          raise "Error - vim binary '#{binary}' does not support client-server mode."
+        end
+      else
+        @vim_binary = DEFAULT_VIM_BINARIES.find {|binary| binary_supports_server_mode?(binary)}
+        unless @vim_binary
+          raise "Error - couldn't find a vim binary that supports client-server mode."
+        end
       end
     end
 
@@ -72,8 +80,8 @@ module Vimbot
       end
     end
 
-    def binary_supports_server_mode?
-      !(`#{vim_binary} --help | grep -e --server`).empty?
+    def binary_supports_server_mode?(binary)
+      !(`#{binary} --help | grep -e --server`).empty?
     end
 
     def binary_has_no_fork_option?

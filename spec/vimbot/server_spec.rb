@@ -17,8 +17,8 @@ describe Vimbot::Server do
 
   describe "#initialize" do
     before do
-      server.stub(:wait_until_up)
-      server.stub(:fork).and_yield
+      Vimbot::Server.any_instance.stub(:wait_until_up)
+      Vimbot::Server.any_instance.stub(:fork).and_yield
     end
 
     context "when a vim binary is specified" do
@@ -55,16 +55,45 @@ describe Vimbot::Server do
     end
 
     context "when no vim binary is specified" do
-      xit "tries common names for vim binaries: vim, gvim and mvim" do
-      end
+      let(:vim_has_server_mode)  { true }
+      let(:mvim_has_server_mode) { true }
+      let(:gvim_has_server_mode) { true }
 
-      context "and some vim binary supports client-server mode" do
-        xit "uses that binary" do
+      before do
+        Vimbot::Server.any_instance.stub(:binary_supports_server_mode?) do |binary|
+          case binary
+          when "vim"
+            vim_has_server_mode
+          when "mvim"
+            mvim_has_server_mode
+          when "gvim"
+            gvim_has_server_mode
+          end
         end
       end
 
-      context "and no vim-binary is found that supports client-server mode" do
-        xit "raises an exception" do
+      context "when 'vim' supports server mode" do
+        its(:vim_binary) { should == "vim" }
+      end
+
+      context "when 'vim' does not support server mode, but 'mvim' does" do
+        let(:vim_has_server_mode) { false }
+        its(:vim_binary) { should == "mvim" }
+      end
+
+      context "when 'vim' and 'mvim' do not support server mode, but 'gvim' does" do
+        let(:vim_has_server_mode)  { false }
+        let(:mvim_has_server_mode) { false }
+        its(:vim_binary) { should == "gvim" }
+      end
+
+      context "when neither 'vim', 'mvim', nor 'gvim' support server mode" do
+        let(:vim_has_server_mode)  { false }
+        let(:mvim_has_server_mode) { false }
+        let(:gvim_has_server_mode) { false }
+
+        it "raises an exception" do
+          expect { server }.to raise_error
         end
       end
     end
@@ -81,7 +110,7 @@ describe Vimbot::Server do
           let(:gvimrc) { nil }
 
           it "uses an empty gvimrc, since the default gvimrc might depend on the default vimrc" do
-            empty_gvimrc = ::Vimbot::Server::EMPTY_GVIMRC
+            empty_gvimrc = Vimbot::Server::EMPTY_GVIMRC
             expect_vim_command_to_match /-U #{empty_gvimrc}/
           end
         end
