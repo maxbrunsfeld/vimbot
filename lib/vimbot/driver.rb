@@ -7,27 +7,49 @@ module Vimbot
     end
 
     def clear_buffer
-      normal "gg", "\"_dG"
+      normal 'gg"_dG'
     end
 
-    def normal(*commands)
-      run(["<Esc>"] + commands + ["<Esc>"])
+    def normal(*strings)
+      run(
+        '<Esc>',
+        ':call feedkeys("',
+        escape(strings.join),
+        '", "t")<CR>'
+      )
+      run '<Esc>'
+    end
+
+    def escape(string)
+      string.gsub(/[()]/, '\\\\\0').gsub(/"/, '\\\\\"')
     end
 
     def insert(*strings)
-      normal(["i"] + strings)
+      run(
+        "<Esc>",
+        "i",
+        strings.join,
+        "<Esc>"
+      )
     end
 
     def append(*strings)
-      normal(["a"] + strings)
+      run(
+        "<Esc>",
+        "a",
+        strings.join,
+        "<Esc>"
+      )
     end
 
     def exec(command)
-      normal
-      run ":redir => vimbot_temp<CR>"
-      run ":silent ", command, "<CR>"
-      run ":redir END<CR>"
-      normal ":"
+      run(
+        "<Esc>",
+        ":redir => vimbot_temp<CR>",
+        ":silent ", command, "<CR>",
+        ":redir END<CR>",
+        ":<Esc>"
+      )
       eval("vimbot_temp").gsub(/^\n/, "")
     end
 

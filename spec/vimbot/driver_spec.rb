@@ -4,7 +4,9 @@ describe Vimbot::Driver do
   subject { driver }
 
   let(:driver) do
-    Vimbot::Driver.new
+    Vimbot::Driver.new(
+      :vimrc  => File.expand_path("../../fixtures/example_vimrc.vim", __FILE__)
+    )
   end
 
   describe "#start" do
@@ -83,7 +85,7 @@ describe Vimbot::Driver do
 
     describe "#normal" do
       it "runs the given keystrokes after returning to normal mode" do
-        driver.run "ifoobar"
+        driver.run "i", "foobar"
         driver.normal "xx"
         driver.current_line.should == "foob"
       end
@@ -91,6 +93,12 @@ describe Vimbot::Driver do
       it "returns to normal mode afterward" do
         driver.normal "i"
         driver.should be_in_normal_mode
+      end
+
+      it "uses mappings from the vimrc" do
+        driver.run "i", "foobar", "<Esc>", "hh"
+        driver.normal "Y"
+        driver.register("\"").should == "bar"
       end
     end
 
@@ -111,14 +119,17 @@ describe Vimbot::Driver do
     end
 
     describe "#register" do
-      before { driver.insert "I belong in x", "<CR>", "I belong in default" }
+      before do
+        driver.insert "I belong in register a"
+        driver.normal '"ayy'
+        driver.append "<CR>"
+        driver.insert "I belong in register b"
+        driver.normal '"byy'
+      end
 
       it "returns the contents of the given register" do
-        driver.run "yy"
-        driver.register("\"").should == "I belong in default"
-
-        driver.run "k", "\"xyy"
-        driver.register("x").should == "I belong in x"
+        driver.register('a').should == "I belong in register a"
+        driver.register('b').should == "I belong in register b"
       end
     end
 
