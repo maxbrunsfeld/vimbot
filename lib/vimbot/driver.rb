@@ -7,7 +7,7 @@ module Vimbot
     end
 
     def clear_buffer
-      normal "ggdG"
+      normal "gg", "\"_dG"
     end
 
     def normal(*commands)
@@ -27,6 +27,7 @@ module Vimbot
       run ":redir => vimbot_temp<CR>"
       run ":silent ", command, "<CR>"
       run ":redir END<CR>"
+      normal ":"
       eval("vimbot_temp").gsub(/^\n/, "")
     end
 

@@ -153,6 +153,14 @@ describe Vimbot::Driver do
         driver.clear_buffer
         driver.current_line.should be_empty
       end
+
+      it "does not affect the contents of the registers" do
+        driver.insert "one\n", "two\n", "three\n"
+        driver.normal "gg", "yy"
+        expect {
+          driver.clear_buffer
+        }.to_not change { driver.exec "registers" }
+      end
     end
   end
 
