@@ -117,6 +117,20 @@ describe Vimbot::Driver do
         driver.normal "Y"
         driver.register('"').should == "bar"
       end
+
+      it "creates an undo entry (despite vim server mode not doing this)" do
+        driver.run "i", "foobar"
+
+        driver.normal "x"
+        driver.current_line.should == "fooba"
+        driver.normal "x"
+        driver.current_line.should == "foob"
+
+        driver.normal "u"
+        driver.current_line.should == "fooba"
+        driver.normal "u"
+        driver.run "i", "foobar"
+      end
     end
 
     describe "#insert" do

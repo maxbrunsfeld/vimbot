@@ -7,7 +7,9 @@ module Vimbot
     end
 
     def normal(*strings)
-      feedkeys("<Esc>", *strings.join, "<Esc>")
+      undo_levels = eval("&ul")
+      run "<Esc>:set undolevels=#{undo_levels}<CR>"
+      feedkeys(strings.join, "<Esc>")
     end
 
     def insert(*strings)
