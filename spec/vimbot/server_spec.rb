@@ -271,8 +271,8 @@ describe Vimbot::Server do
 
       it "handles commands containing single quotes" do
         server.run "i"
-        server.run "who's house?"
-        current_line.should == "who's house?"
+        server.run "who's that?"
+        current_line.should == "who's that?"
       end
 
       it "handles expressions containing double quotes" do

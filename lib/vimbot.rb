@@ -1,3 +1,4 @@
+require "shellwords"
 require "open3"
-require "vimbot/server.rb"
-require "vimbot/driver.rb"
+require File.expand_path("../vimbot/server.rb", __FILE__)
+require File.expand_path("../vimbot/driver.rb", __FILE__)

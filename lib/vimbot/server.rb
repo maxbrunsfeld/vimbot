@@ -22,11 +22,11 @@ module Vimbot
     end
 
     def run(command)
-      system "#{command_prefix} --remote-send \"#{escape(command)}\""
+      system "#{command_prefix} --remote-send #{escape(command)}"
     end
 
     def eval(expression)
-      output, error = Open3.capture3 "#{command_prefix} --remote-expr \"#{escape(expression)}\""
+      output, error = Open3.capture3 "#{command_prefix} --remote-expr #{escape(expression)}"
       if error.empty?
         output.gsub(/\n$/, "")
       else
@@ -105,7 +105,7 @@ module Vimbot
     end
 
     def escape(string)
-      string.gsub(/"/, '\"')
+      Shellwords.escape(string)
     end
 
     def command_prefix
