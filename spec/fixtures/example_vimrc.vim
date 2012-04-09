@@ -1,3 +1,5 @@
+set nocompatible
+
 " don't beep
 set visualbell
 set noerrorbells

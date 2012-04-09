@@ -95,17 +95,53 @@ describe Vimbot::Driver do
         driver.should be_in_normal_mode
       end
 
+      it "handles quotation marks" do
+        driver.normal "i", '"foo"'
+        driver.current_line.should == '"foo"'
+
+        driver.normal "S", '"foo"'
+        driver.current_line.should == '"foo"'
+      end
+
+      it "handles special vim characters" do
+        driver.run "i", "first line", "<CR>", "second line", "<Esc>"
+        driver.run "gg"
+        driver.line_number.should == 1
+
+        driver.normal "<CR>"
+        driver.line_number.should == 2
+      end
+
       it "uses mappings from the vimrc" do
         driver.run "i", "foobar", "<Esc>", "hh"
         driver.normal "Y"
-        driver.register("\"").should == "bar"
+        driver.register('"').should == "bar"
       end
     end
 
     describe "#insert" do
-      before { driver.insert "First", "Second" }
-      its(:current_line) { should == "FirstSecond" }
-      it { should_not be_in_insert_mode }
+      it "inserts the given text" do
+        driver.insert "omg"
+        driver.current_line.should == "omg"
+      end
+
+      it "exits insert mode afterward" do
+        driver.insert "omg"
+        driver.should be_in_normal_mode
+      end
+
+      it "handles special characters" do
+        driver.insert "first line", "<CR>", "second line"
+        driver.current_line.should == "second line"
+      end
+
+      it "uses mappings from the vimrc" do
+        driver.insert "hello world"
+        driver.insert "<C-a>"
+        driver.column_number.should == 1
+        driver.insert "<C-e>"
+        driver.column_number.should == ("hello world".length)
+      end
     end
 
     describe "#append" do
@@ -144,7 +180,7 @@ describe Vimbot::Driver do
       it "returns the output of the command" do
         driver.exec("echo 'hello world'").should  == "hello world"
 
-        driver.insert "jello\n", "jello\n", "jello\n"
+        driver.insert "jello<CR>", "jello<CR>", "jello<CR>"
         driver.exec("%s/jello/pudding").should == "3 substitutions on 3 lines"
       end
     end
@@ -159,7 +195,7 @@ describe Vimbot::Driver do
 
     describe "#has_popup_menu_visible?" do
       it "returns true when the autocomplete pop-up menu is open" do
-        driver.insert "fur\n", "fun\n", "fuzz\n"
+        driver.insert "fur<CR>", "fun<CR>", "fuzz<CR>"
         driver.run "i", "fu", "<C-n>"
         driver.should have_popup_menu_visible
       end

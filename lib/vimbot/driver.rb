@@ -7,50 +7,31 @@ module Vimbot
     end
 
     def clear_buffer
-      normal 'gg"_dG'
+      run '<Esc>gg"_dG<Esc>'
     end
 
     def normal(*strings)
-      run(
-        '<Esc>',
-        ':call feedkeys("',
-        escape(strings.join),
-        '", "t")<CR>'
-      )
-      run '<Esc>'
-    end
-
-    def escape(string)
-      string.gsub(/[()]/, '\\\\\0').gsub(/"/, '\\\\\"')
+      feedkeys("<Esc>", *strings.join, "<Esc>")
     end
 
     def insert(*strings)
-      run(
-        "<Esc>",
-        "i",
-        strings.join,
-        "<Esc>"
-      )
+      normal "i", strings.join
     end
 
     def append(*strings)
-      run(
-        "<Esc>",
-        "a",
-        strings.join,
-        "<Esc>"
-      )
+      normal "a", strings.join
     end
 
     def exec(command)
+      temp_variable_name = "vimbot_temp"
       run(
         "<Esc>",
-        ":redir => vimbot_temp<CR>",
-        ":silent ", command, "<CR>",
+        ":redir => #{temp_variable_name}<CR>",
+        ":silent #{command}<CR>",
         ":redir END<CR>",
         ":<Esc>"
       )
-      eval("vimbot_temp").gsub(/^\n/, "")
+      eval(temp_variable_name).gsub(/^\n/, "")
     end
 
     def source(file)
@@ -67,6 +48,14 @@ module Vimbot
 
     def mode
       eval("mode(1)")
+    end
+
+    def column_number
+      eval("col('.')").to_i
+    end
+
+    def line_number
+      eval("line('.')").to_i
     end
 
     def in_insert_mode?;   mode == "i"; end
@@ -86,6 +75,25 @@ module Vimbot
 
     def eval(expr)
       server.eval(expr)
+    end
+
+    SPECIAL_CHARACTERS  = %w(CR Cr cr Esc esc Space space)
+    MODIFIER_CHARACTERS = %w(C D M S)
+
+    VIM_PATTERNS = [
+      SPECIAL_CHARACTERS.map {|char| /<(#{char})>/},
+      MODIFIER_CHARACTERS.map {|char| /<(#{char}-\w+)>/}
+    ].flatten
+
+    def feedkeys(*strings)
+      run %(<Esc>:call feedkeys("#{escape(strings.join)}", 'm')<CR>)
+    end
+
+    def escape(string)
+      string.tap do |string|
+        string.gsub!(/[()"]/, '\\\\\0')
+        VIM_PATTERNS.each { |pattern| string.gsub!(pattern, '\\\<\1_<BS>>') }
+      end
     end
 
     def start; server.start; end
