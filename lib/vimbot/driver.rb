@@ -76,6 +76,10 @@ module Vimbot
     def in_replace_mode?;  mode == "R"; end
     def in_command_mode?;  mode == "c"; end
 
+    def has_popup_menu_visible?
+      eval("pumvisible()") == "1"
+    end
+
     def run(*commands)
       server.run(commands.join)
     end

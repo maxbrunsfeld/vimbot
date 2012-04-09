@@ -157,6 +157,19 @@ describe Vimbot::Driver do
       end
     end
 
+    describe "#has_popup_menu_visible?" do
+      it "returns true when the autocomplete pop-up menu is open" do
+        driver.insert "fur\n", "fun\n", "fuzz\n"
+        driver.run "i", "fu", "<C-n>"
+        driver.should have_popup_menu_visible
+      end
+
+      it "returns false otherwise" do
+        driver.normal
+        driver.should_not have_popup_menu_visible
+      end
+    end
+
     describe "#clear_buffer" do
       it "deletes all text in the buffer" do
         driver.run "i", "foo", "<CR>", "bar"
