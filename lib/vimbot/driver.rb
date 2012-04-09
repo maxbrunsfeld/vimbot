@@ -6,10 +6,6 @@ module Vimbot
       @server = Vimbot::Server.new(options)
     end
 
-    def clear_buffer
-      run '<Esc>gg"_dG<Esc>'
-    end
-
     def normal(*strings)
       feedkeys("<Esc>", *strings.join, "<Esc>")
     end
@@ -29,9 +25,13 @@ module Vimbot
         ":redir => #{temp_variable_name}<CR>",
         ":silent #{command}<CR>",
         ":redir END<CR>",
-        ":<Esc>"
+        "<C-l>"
       )
       eval(temp_variable_name).gsub(/^\n/, "")
+    end
+
+    def clear_buffer
+      run '<Esc>gg"_dG<Esc>'
     end
 
     def source(file)
@@ -69,6 +69,10 @@ module Vimbot
       eval("pumvisible()") == "1"
     end
 
+    def feedkeys(*strings)
+      run %(<Esc>:call feedkeys("#{escape_argument(strings.join)}", 'm')<CR><C-l>)
+    end
+
     def run(*commands)
       server.run(commands.join)
     end
@@ -77,19 +81,15 @@ module Vimbot
       server.eval(expr)
     end
 
-    SPECIAL_CHARACTERS  = %w(CR Cr cr Esc esc Space space)
+    SPECIAL_CHARACTERS  = %w(CR Cr cr ESC Esc esc Space space)
     MODIFIER_CHARACTERS = %w(C D M S)
 
     VIM_PATTERNS = [
-      SPECIAL_CHARACTERS.map {|char| /<(#{char})>/},
+      SPECIAL_CHARACTERS.map  {|char| /<(#{char})>/},
       MODIFIER_CHARACTERS.map {|char| /<(#{char}-\w+)>/}
     ].flatten
 
-    def feedkeys(*strings)
-      run %(<Esc>:call feedkeys("#{escape(strings.join)}", 'm')<CR>)
-    end
-
-    def escape(string)
+    def escape_argument(string)
       string.tap do |string|
         string.gsub!(/[()"]/, '\\\\\0')
         VIM_PATTERNS.each { |pattern| string.gsub!(pattern, '\\\<\1_<BS>>') }
