@@ -6,9 +6,13 @@ module Vimbot
       @server = Vimbot::Server.new(options)
     end
 
-    def normal(*strings)
+    def type(*strings)
       create_undo_entry
-      feedkeys(strings.join, "<Esc>")
+      feedkeys(strings.join)
+    end
+
+    def normal(*strings)
+      type "<Esc>", strings.join
     end
 
     def insert(*strings)
@@ -20,13 +24,10 @@ module Vimbot
     end
 
     def exec(command)
-      run(
-        "<Esc>",
-        ":redir => #{TEMP_VARIABLE_NAME}<CR>",
-        ":silent #{command}<CR>",
-        ":redir END<CR>",
-        "<C-l>"
-      )
+      normal
+      raw_command("redir => #{TEMP_VARIABLE_NAME}")
+      raw_command("silent #{command}")
+      raw_command("redir END")
       evaluate(TEMP_VARIABLE_NAME).gsub(/^\n/, "")
     end
 
@@ -60,7 +61,7 @@ module Vimbot
 
     def in_insert_mode?;   mode == "i"; end
     def in_normal_mode?;   mode == "n"; end
-    def in_visual_mode?;   mode == "v"; end
+    def in_visual_mode?;   ["v", "V"].include?(mode); end
     def in_select_mode?;   mode == "s"; end
     def in_replace_mode?;  mode == "R"; end
     def in_command_mode?;  mode == "c"; end
@@ -70,11 +71,27 @@ module Vimbot
     end
 
     def create_undo_entry
-      run "<Esc>:set undolevels=#{undo_levels}<CR>"
+      raw_command %(set undolevels=#{undo_levels})
     end
 
     def feedkeys(*strings)
-      run %(<Esc>:call feedkeys("#{escape_argument(strings.join)}", 'm')<CR><C-l>)
+      raw_command %(call feedkeys("#{escape_argument(strings.join)}", 'm'))
+    end
+
+    def raw_command(string)
+      prefix, suffix = case mode
+        when 'n'
+          [":", "<C-l>"]
+        when 'i'
+          "<C-o>:"
+        when 'v'
+        when 'V'
+          [":<C-w>", "<C-l>gv"]
+        else
+          "<Esc>"
+      end
+
+      run "#{prefix}#{string}<CR>#{suffix}"
     end
 
     def undo
@@ -94,7 +111,7 @@ module Vimbot
     end
 
     TEMP_VARIABLE_NAME = "vimbot_temp"
-    SPECIAL_CHARACTERS  = %w(CR Cr cr ESC Esc esc Space space)
+    SPECIAL_CHARACTERS  = %w(CR Cr cr ESC Esc esc Space space LEFT Left RIGHT Right)
     MODIFIER_CHARACTERS = %w(C D M S)
 
     VIM_PATTERNS = [

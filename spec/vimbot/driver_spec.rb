@@ -39,7 +39,7 @@ describe Vimbot::Driver do
     end
 
     describe "predicate methods for getting the current mode" do
-      before { driver.run "<Esc>" }
+      before { driver.type "<Esc>" }
 
       context "when in normal mode" do
         its(:mode) { should == "n" }
@@ -52,25 +52,25 @@ describe Vimbot::Driver do
       end
 
       context "when in insert mode" do
-        before { driver.run "i" }
+        before { driver.type "i" }
         its(:mode) { should == "i" }
         it { should be_in_insert_mode }
       end
 
       context "when in visual mode" do
-        before { driver.run "v" }
+        before { driver.type "v" }
         its(:mode) { should == "v" }
         it { should be_in_visual_mode }
       end
 
       context "when in command mode" do
-        before { driver.run ":" }
+        before { driver.type ":" }
         its(:mode) { should == "c" }
         it { should be_in_command_mode }
       end
 
       context "when in replace mode" do
-        before { driver.run "R" }
+        before { driver.type "R" }
         its(:mode) { should == "R" }
         it { should be_in_replace_mode }
       end
@@ -78,62 +78,115 @@ describe Vimbot::Driver do
 
     describe "#line" do
       it "returns the text of the current line" do
-        driver.run "i", "foo"
+        driver.insert "foo"
         driver.line.should == "foo"
+      end
+    end
+
+    describe "#type" do
+      before do
+        driver.insert "a treatise<CR>", "on treats"
+        driver.normal
+      end
+
+      it "uses mappings from the vimrc" do
+        driver.type "b", "Y"
+        driver.register('"').should == "treats" # since Y is mapped to y$
+      end
+
+      it "handles quotation marks" do
+        driver.type %("x), "yiw"
+        driver.register('x').should == "treats"
+
+        driver.type "o", %("foo")
+        driver.line.should == %("foo")
+      end
+
+      it "handles special vim characters" do
+        driver.line.should == "on treats"
+        driver.append "<CR>", "like the world has never known"
+        driver.type "<Esc>"
+        driver.line.should == "like the world has never known"
+
+        driver.type "^"
+        driver.column_number.should == 1
+        driver.type "<Space><Space>"
+        driver.column_number.should == 3
+        driver.type "<Left>"
+        driver.column_number.should == 2
+      end
+
+      it "creates an undo entry (despite vim server mode not doing this)" do
+        driver.type "x"
+        driver.line.should == "on treat"
+        driver.type "x"
+        driver.line.should == "on trea"
+
+        driver.undo
+        driver.line.should == "on treat"
+        driver.undo
+        driver.line.should == "on treats"
+
+        driver.redo
+        driver.line.should == "on treat"
+        driver.redo
+        driver.line.should == "on trea"
+      end
+
+      describe "when in insert mode" do
+        before do
+          driver.type "a"
+          driver.should be_in_insert_mode
+          driver.type " and all"
+        end
+
+        it "sends the given keystrokes in insert mode" do
+          driver.line.should == "on treats and all"
+        end
+
+        it "stays in insert mode afterwards" do
+          driver.should be_in_insert_mode
+        end
+      end
+
+      describe "when in visual mode" do
+        before do
+          driver.type "V"
+          driver.should be_in_visual_mode
+          driver.type "k"
+        end
+
+        it "sends the given keystrokes in visual mode" do
+          driver.type "gU"
+          driver.line.should == "A TREATISE"
+        end
+
+        it "stays in visual mode afterwards" do
+          driver.should be_in_visual_mode
+        end
+      end
+
+      describe "when in command mode" do
+        before do
+          driver.type ":"
+          driver.should be_in_command_mode
+          driver.type "s/treats/slime"
+        end
+
+        xit "sends the given keystrokes in command mode" do
+          driver.line.should == "on slime"
+        end
+
+        xit "stays in command mode afterwards" do
+          driver.should be_in_command_mode
+        end
       end
     end
 
     describe "#normal" do
       it "runs the given keystrokes after returning to normal mode" do
-        driver.run "i", "foobar"
+        driver.type "i", "foobar"
         driver.normal "xx"
-        driver.line.should == "foob"
-      end
-
-      it "returns to normal mode afterward" do
-        driver.normal "i"
-        driver.should be_in_normal_mode
-      end
-
-      it "handles quotation marks" do
-        driver.normal "i", '"foo"'
-        driver.line.should == '"foo"'
-
-        driver.normal "S", '"foo"'
-        driver.line.should == '"foo"'
-      end
-
-      it "handles special vim characters" do
-        driver.run "i", "first line", "<CR>", "second line", "<Esc>"
-        driver.run "gg"
-        driver.line_number.should == 1
-
-        driver.normal "<CR>"
-        driver.line_number.should == 2
-      end
-
-      it "uses mappings from the vimrc" do
-        driver.run "i", "foobar", "<Esc>", "hh"
-        driver.normal "Y"
-        driver.register('"').should == "bar"
-      end
-
-      it "creates an undo entry (despite vim server mode not doing this)" do
-        driver.insert "foobar"
-
-        driver.normal "x"
-        driver.line.should == "fooba"
-        driver.normal "x"
-        driver.line.should == "foob"
-
-        driver.undo
-        driver.line.should == "fooba"
-        driver.undo
-        driver.line.should == "foobar"
-
-        driver.redo
-        driver.line.should == "fooba"
-        driver.redo
         driver.line.should == "foob"
       end
     end
@@ -142,11 +195,6 @@ describe Vimbot::Driver do
       it "inserts the given text" do
         driver.insert "omg"
         driver.line.should == "omg"
-      end
-
-      it "exits insert mode afterward" do
-        driver.insert "omg"
-        driver.should be_in_normal_mode
       end
 
       it "handles special characters" do
@@ -159,7 +207,8 @@ describe Vimbot::Driver do
         driver.insert "<C-a>"
         driver.column_number.should == 1
         driver.insert "<C-e>"
-        driver.column_number.should == ("hello world".length)
+        driver.normal
+        driver.column_number.should == "hello world".length
       end
     end
 
@@ -170,7 +219,6 @@ describe Vimbot::Driver do
       end
 
       its(:line) { should == "FirstSecondThird"}
-      it { should_not be_in_insert_mode }
     end
 
     describe "#register" do
@@ -215,7 +263,7 @@ describe Vimbot::Driver do
     describe "#has_popup_menu_visible?" do
       it "returns true when the autocomplete pop-up menu is open" do
         driver.insert "fur<CR>", "fun<CR>", "fuzz<CR>"
-        driver.run "i", "fu", "<C-n>"
+        driver.insert "fu", "<C-n>"
         driver.should have_popup_menu_visible
       end
 
@@ -227,14 +275,14 @@ describe Vimbot::Driver do
 
     describe "#clear_buffer" do
       it "deletes all text in the buffer" do
-        driver.run "i", "foo", "<CR>", "bar"
+        driver.type "i", "foo", "<CR>", "bar"
         driver.line.should_not be_empty
         driver.clear_buffer
         driver.line.should be_empty
       end
 
       it "does not affect the contents of the registers" do
-        driver.insert "one\n", "two\n", "three\n"
+        driver.insert "one<CR>", "two<CR>", "three<CR>"
         driver.normal "gg", "yy"
         expect {
           driver.clear_buffer
