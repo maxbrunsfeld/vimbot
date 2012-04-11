@@ -221,27 +221,27 @@ describe Vimbot::Server do
     before(:all) { server.start }
     after(:all)  { server.stop }
 
-    describe "#eval" do
+    describe "#evaluate" do
       it "returns the result of the given vimscript expression" do
-        server.eval("8 + 1").should == "9"
-        server.eval("len([1, 2, 3, 4, 5])").should == "5"
+        server.evaluate("8 + 1").should == "9"
+        server.evaluate("len([1, 2, 3, 4, 5])").should == "5"
       end
 
       it "handles expressions containing single quotes" do
-        server.eval("'foo' . 'bar' . 'baz'").should == "foobarbaz"
+        server.evaluate("'foo' . 'bar' . 'baz'").should == "foobarbaz"
       end
 
       it "handles expressions containing double quotes" do
-        server.eval('"foo" . "bar" . "baz"').should == "foobarbaz"
+        server.evaluate('"foo" . "bar" . "baz"').should == "foobarbaz"
       end
 
       context "with an expression that yields an empty string" do
         it "returns an empty string" do
-          server.eval("[]").should == ""
+          server.evaluate("[]").should == ""
         end
 
         it "doesn't add to the server's errors" do
-          server.eval("[]")
+          server.evaluate("[]")
           server.errors.should be_empty
         end
       end
@@ -250,11 +250,11 @@ describe Vimbot::Server do
         before { server.errors.clear }
 
         it "returns false" do
-          server.eval("1 + []").should be_false
+          server.evaluate("1 + []").should be_false
         end
 
         it "adds an entry to the server's errors" do
-          server.eval("1 + []")
+          server.evaluate("1 + []")
           server.errors.length.should == 1
         end
       end
@@ -282,7 +282,7 @@ describe Vimbot::Server do
       end
 
       def current_line
-        server.eval "getline('.')"
+        server.evaluate "getline('.')"
       end
     end
   end

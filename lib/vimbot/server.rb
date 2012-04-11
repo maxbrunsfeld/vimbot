@@ -25,7 +25,7 @@ module Vimbot
       system "#{command_prefix} --remote-send #{escape(command)}"
     end
 
-    def eval(expression)
+    def evaluate(expression)
       output, error = Open3.capture3 "#{command_prefix} --remote-expr #{escape(expression)}"
       if error.empty?
         output.gsub(/\n$/, "")

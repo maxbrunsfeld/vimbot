@@ -7,8 +7,7 @@ module Vimbot
     end
 
     def normal(*strings)
-      undo_levels = eval("&ul")
-      run "<Esc>:set undolevels=#{undo_levels}<CR>"
+      create_undo_entry
       feedkeys(strings.join, "<Esc>")
     end
 
@@ -21,15 +20,14 @@ module Vimbot
     end
 
     def exec(command)
-      temp_variable_name = "vimbot_temp"
       run(
         "<Esc>",
-        ":redir => #{temp_variable_name}<CR>",
+        ":redir => #{TEMP_VARIABLE_NAME}<CR>",
         ":silent #{command}<CR>",
         ":redir END<CR>",
         "<C-l>"
       )
-      eval(temp_variable_name).gsub(/^\n/, "")
+      evaluate(TEMP_VARIABLE_NAME).gsub(/^\n/, "")
     end
 
     def clear_buffer
@@ -41,23 +39,23 @@ module Vimbot
     end
 
     def current_line
-      eval("getline('.')")
+      evaluate("getline('.')")
     end
 
     def register(reg_name)
-      eval("getreg('#{reg_name}')")
+      evaluate("getreg('#{reg_name}')")
     end
 
     def mode
-      eval("mode(1)")
+      evaluate("mode(1)")
     end
 
     def column_number
-      eval("col('.')").to_i
+      evaluate("col('.')").to_i
     end
 
     def line_number
-      eval("line('.')").to_i
+      evaluate("line('.')").to_i
     end
 
     def in_insert_mode?;   mode == "i"; end
@@ -68,7 +66,11 @@ module Vimbot
     def in_command_mode?;  mode == "c"; end
 
     def has_popup_menu_visible?
-      eval("pumvisible()") == "1"
+      evaluate("pumvisible()") == "1"
+    end
+
+    def create_undo_entry
+      run "<Esc>:set undolevels=#{undo_levels}<CR>"
     end
 
     def feedkeys(*strings)
@@ -79,10 +81,11 @@ module Vimbot
       server.run(commands.join)
     end
 
-    def eval(expr)
-      server.eval(expr)
+    def evaluate(expr)
+      server.evaluate(expr)
     end
 
+    TEMP_VARIABLE_NAME = "vimbot_temp"
     SPECIAL_CHARACTERS  = %w(CR Cr cr ESC Esc esc Space space)
     MODIFIER_CHARACTERS = %w(C D M S)
 
@@ -90,6 +93,10 @@ module Vimbot
       SPECIAL_CHARACTERS.map  {|char| /<(#{char})>/},
       MODIFIER_CHARACTERS.map {|char| /<(#{char}-\w+)>/}
     ].flatten
+
+    def undo_levels
+      @undo_levels ||= evaluate("&ul")
+    end
 
     def escape_argument(string)
       string.tap do |string|

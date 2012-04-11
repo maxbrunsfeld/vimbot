@@ -203,7 +203,7 @@ describe Vimbot::Driver do
       it "sources the given vimscript file" do
         path = File.expand_path("../../fixtures/foo.vim", __FILE__)
         driver.source path
-        driver.eval("g:foo").should == "1"
+        driver.evaluate("g:foo").should == "1"
       end
     end
 
