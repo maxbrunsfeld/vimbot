@@ -31,10 +31,10 @@ describe Vimbot::Driver do
     after(:all)  { driver.stop }
     before { driver.clear_buffer }
 
-    describe "#run" do
+    describe "#raw_type" do
       it "concatenates its arguments before sending them to the server" do
         driver.server.should_receive(:run).once.with("OneTwoThreeFour")
-        driver.run "One", "Two", "Three", "Four"
+        driver.raw_type "One", "Two", "Three", "Four"
       end
     end
 
@@ -236,19 +236,19 @@ describe Vimbot::Driver do
       end
     end
 
-    describe "#exec" do
+    describe "#command" do
       it "executes the given vim command" do
         driver.insert "foo"
         driver.line.should == "foo"
-        driver.exec "s/foo/bar"
+        driver.command "s/foo/bar"
         driver.line.should == "bar"
       end
 
       it "returns the output of the command" do
-        driver.exec("echo 'hello world'").should  == "hello world"
+        driver.command("echo 'hello world'").should  == "hello world"
 
         driver.insert "jello<CR>", "jello<CR>", "jello<CR>"
-        driver.exec("%s/jello/pudding").should == "3 substitutions on 3 lines"
+        driver.command("%s/jello/pudding").should == "3 substitutions on 3 lines"
       end
     end
 
@@ -286,7 +286,7 @@ describe Vimbot::Driver do
         driver.normal "gg", "yy"
         expect {
           driver.clear_buffer
-        }.to_not change { driver.exec "registers" }
+        }.to_not change { driver.command "registers" }
       end
     end
   end

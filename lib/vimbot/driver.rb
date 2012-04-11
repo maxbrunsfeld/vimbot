@@ -23,7 +23,7 @@ module Vimbot
       normal "a", strings.join
     end
 
-    def exec(command)
+    def command(command)
       normal
       raw_command("redir => #{TEMP_VARIABLE_NAME}")
       raw_command("silent #{command}")
@@ -32,11 +32,11 @@ module Vimbot
     end
 
     def clear_buffer
-      run '<Esc>gg"_dG<Esc>'
+      raw_type '<Esc>gg"_dG<Esc>'
     end
 
     def source(file)
-      exec "source #{file}"
+      command "source #{file}"
     end
 
     def line
@@ -70,6 +70,14 @@ module Vimbot
       evaluate("pumvisible()") == "1"
     end
 
+    def undo
+      raw_command "undo"
+    end
+
+    def redo
+      raw_command "redo"
+    end
+
     def create_undo_entry
       raw_command %(set undolevels=#{undo_levels})
     end
@@ -91,18 +99,10 @@ module Vimbot
           "<Esc>"
       end
 
-      run "#{prefix}#{string}<CR>#{suffix}"
+      raw_type "#{prefix}#{string}<CR>#{suffix}"
     end
 
-    def undo
-      normal "u"
-    end
-
-    def redo
-      normal "<C-r>"
-    end
-
-    def run(*commands)
+    def raw_type(*commands)
       server.run(commands.join)
     end
 
