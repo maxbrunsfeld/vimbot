@@ -126,9 +126,15 @@ describe Vimbot::Driver do
         driver.normal "x"
         driver.line.should == "foob"
 
-        driver.normal "u"
-        driver.normal "u"
+        driver.undo
+        driver.line.should == "fooba"
+        driver.undo
         driver.line.should == "foobar"
+
+        driver.redo
+        driver.line.should == "fooba"
+        driver.redo
+        driver.line.should == "foob"
       end
     end
 

@@ -77,6 +77,14 @@ module Vimbot
       run %(<Esc>:call feedkeys("#{escape_argument(strings.join)}", 'm')<CR><C-l>)
     end
 
+    def undo
+      normal "u"
+    end
+
+    def redo
+      normal "<C-r>"
+    end
+
     def run(*commands)
       server.run(commands.join)
     end
