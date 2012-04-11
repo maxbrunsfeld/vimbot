@@ -76,10 +76,10 @@ describe Vimbot::Driver do
       end
     end
 
-    describe "#current_line" do
+    describe "#line" do
       it "returns the text of the current line" do
         driver.run "i", "foo"
-        driver.current_line.should == "foo"
+        driver.line.should == "foo"
       end
     end
 
@@ -87,7 +87,7 @@ describe Vimbot::Driver do
       it "runs the given keystrokes after returning to normal mode" do
         driver.run "i", "foobar"
         driver.normal "xx"
-        driver.current_line.should == "foob"
+        driver.line.should == "foob"
       end
 
       it "returns to normal mode afterward" do
@@ -97,10 +97,10 @@ describe Vimbot::Driver do
 
       it "handles quotation marks" do
         driver.normal "i", '"foo"'
-        driver.current_line.should == '"foo"'
+        driver.line.should == '"foo"'
 
         driver.normal "S", '"foo"'
-        driver.current_line.should == '"foo"'
+        driver.line.should == '"foo"'
       end
 
       it "handles special vim characters" do
@@ -119,24 +119,23 @@ describe Vimbot::Driver do
       end
 
       it "creates an undo entry (despite vim server mode not doing this)" do
-        driver.run "i", "foobar"
+        driver.insert "foobar"
 
         driver.normal "x"
-        driver.current_line.should == "fooba"
+        driver.line.should == "fooba"
         driver.normal "x"
-        driver.current_line.should == "foob"
+        driver.line.should == "foob"
 
         driver.normal "u"
-        driver.current_line.should == "fooba"
         driver.normal "u"
-        driver.run "i", "foobar"
+        driver.line.should == "foobar"
       end
     end
 
     describe "#insert" do
       it "inserts the given text" do
         driver.insert "omg"
-        driver.current_line.should == "omg"
+        driver.line.should == "omg"
       end
 
       it "exits insert mode afterward" do
@@ -146,7 +145,7 @@ describe Vimbot::Driver do
 
       it "handles special characters" do
         driver.insert "first line", "<CR>", "second line"
-        driver.current_line.should == "second line"
+        driver.line.should == "second line"
       end
 
       it "uses mappings from the vimrc" do
@@ -164,7 +163,7 @@ describe Vimbot::Driver do
         driver.append "Second", "Third"
       end
 
-      its(:current_line) { should == "FirstSecondThird"}
+      its(:line) { should == "FirstSecondThird"}
       it { should_not be_in_insert_mode }
     end
 
@@ -186,9 +185,9 @@ describe Vimbot::Driver do
     describe "#exec" do
       it "executes the given vim command" do
         driver.insert "foo"
-        driver.current_line.should == "foo"
+        driver.line.should == "foo"
         driver.exec "s/foo/bar"
-        driver.current_line.should == "bar"
+        driver.line.should == "bar"
       end
 
       it "returns the output of the command" do
@@ -223,9 +222,9 @@ describe Vimbot::Driver do
     describe "#clear_buffer" do
       it "deletes all text in the buffer" do
         driver.run "i", "foo", "<CR>", "bar"
-        driver.current_line.should_not be_empty
+        driver.line.should_not be_empty
         driver.clear_buffer
-        driver.current_line.should be_empty
+        driver.line.should be_empty
       end
 
       it "does not affect the contents of the registers" do

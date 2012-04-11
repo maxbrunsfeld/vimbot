@@ -38,7 +38,7 @@ module Vimbot
       exec "source #{file}"
     end
 
-    def current_line
+    def line
       evaluate("getline('.')")
     end
 
