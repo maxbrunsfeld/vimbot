@@ -2,12 +2,7 @@ require 'spec_helper'
 
 describe Vimbot::Driver do
   subject { driver }
-
-  let(:driver) do
-    Vimbot::Driver.new(
-      :vimrc  => File.expand_path("../../fixtures/example_vimrc.vim", __FILE__)
-    )
-  end
+  let(:driver) { Vimbot::Driver.new }
 
   describe "#start" do
     before { driver.start }
@@ -29,7 +24,12 @@ describe Vimbot::Driver do
   describe "running commands" do
     before(:all) { driver.start }
     after(:all)  { driver.stop }
-    before { driver.clear_buffer }
+
+    before do
+      # puts driver.mode
+      driver.set "nocompatible"
+      driver.clear_buffer
+    end
 
     describe "#raw_type" do
       it "concatenates its arguments before sending them to the server" do
@@ -90,6 +90,7 @@ describe Vimbot::Driver do
       end
 
       it "uses mappings from the vimrc" do
+        driver.nmap "Y", "y$"
         driver.type "b", "Y"
         driver.register('"').should == "treats" # since Y is mapped to y$
       end
@@ -117,6 +118,8 @@ describe Vimbot::Driver do
       end
 
       it "creates an undo entry (despite vim server mode not doing this)" do
+        driver.set "nocompatible"
+
         driver.type "x"
         driver.line.should == "on treat"
         driver.type "x"
@@ -202,7 +205,10 @@ describe Vimbot::Driver do
         driver.line.should == "second line"
       end
 
-      it "uses mappings from the vimrc" do
+      it "uses mappings" do
+        driver.imap "<C-a>", "<Home>"
+        driver.imap "<C-e>", "<End>"
+
         driver.insert "hello world"
         driver.insert "<C-a>"
         driver.column_number.should == 1

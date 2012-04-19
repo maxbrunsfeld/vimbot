@@ -66,6 +66,11 @@ module Vimbot
     def in_replace_mode?;  mode == "R"; end
     def in_command_mode?;  mode == "c"; end
 
+    ['', 'n', 'i', 'v', 'x', 's', 'c'].each do |mode_prefix|
+      map_cmd = "#{mode_prefix}map"
+      define_method(map_cmd) {|input, output| raw_command "#{map_cmd} #{input} #{output}"}
+    end
+
     def has_popup_menu_visible?
       evaluate("pumvisible()") == "1"
     end
@@ -92,14 +97,13 @@ module Vimbot
           [":", "<C-l>"]
         when 'i'
           "<C-o>:"
-        when 'v'
-        when 'V'
+        when /[vV]/
           [":<C-w>", "<C-l>gv"]
         else
-          "<Esc>"
+          "<Esc>:"
       end
 
-      raw_type "#{prefix}#{string}<CR>#{suffix}"
+      raw_type "#{prefix}#{escape_command(string)}<CR>#{suffix}"
     end
 
     def raw_type(*commands)
@@ -110,8 +114,13 @@ module Vimbot
       server.evaluate(expr)
     end
 
+    def set(option, value=nil)
+      cmd = [option, value].compact.join("=")
+      raw_command "set #{cmd}"
+    end
+
     TEMP_VARIABLE_NAME = "vimbot_temp"
-    SPECIAL_CHARACTERS  = %w(CR Cr cr ESC Esc esc Space space LEFT Left RIGHT Right)
+    SPECIAL_CHARACTERS  = %w(CR Cr cr ESC Esc esc Space space LEFT Left RIGHT Right Home HOME home End end END)
     MODIFIER_CHARACTERS = %w(C D M S)
 
     VIM_PATTERNS = [
@@ -123,10 +132,16 @@ module Vimbot
       @undo_levels ||= evaluate("&ul")
     end
 
+    def escape_command(string)
+      string.tap do |string|
+        VIM_PATTERNS.each { |pattern| string.gsub!(pattern, '<\1_<BS>>') }
+      end
+    end
+
     def escape_argument(string)
       string.tap do |string|
         string.gsub!(/[()"]/, '\\\\\0')
-        VIM_PATTERNS.each { |pattern| string.gsub!(pattern, '\\\<\1_<BS>>') }
+        string.gsub!(/<[^>]+>/, '\\\\\0')
       end
     end
 
