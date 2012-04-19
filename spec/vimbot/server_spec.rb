@@ -2,11 +2,7 @@ require 'spec_helper'
 
 describe Vimbot::Server do
   let(:server) do
-    Vimbot::Server.new(
-      :vim_binary => vim_binary,
-      :vimrc => vimrc,
-      :gvimrc => gvimrc
-    )
+    Vimbot::Server.new(:vimrc => vimrc, :gvimrc => gvimrc)
   end
 
   let(:vim_binary) { nil }
@@ -22,6 +18,8 @@ describe Vimbot::Server do
     end
 
     context "when a vim binary is specified" do
+      let(:server) { Vimbot::Server.new(:vim_binary => vim_binary) }
+
       context "and the version supports client-server mode" do
         let(:vim_binary) { File.expand_path("../../fixtures/fake_vim", __FILE__) }
 
@@ -55,6 +53,8 @@ describe Vimbot::Server do
     end
 
     context "when no vim binary is specified" do
+      let(:server) { Vimbot::Server.new }
+
       let(:vim_has_server_mode)  { true }
       let(:mvim_has_server_mode) { true }
       let(:gvim_has_server_mode) { true }
@@ -99,52 +99,42 @@ describe Vimbot::Server do
     end
 
     context "with custom vim config files" do
+      let(:server) { Vimbot::Server.new(:vimrc => vimrc, :gvimrc => gvimrc) }
+      let(:vimrc)  { nil }
+      let(:gvimrc) { nil }
+
       context "when a vimrc is specified" do
         let(:vimrc) { File.expand_path('../../fixtures/foo.vim', __FILE__) }
 
         it "uses the specificied vimrc" do
           expect_vim_command_to_match /-u #{vimrc}/
         end
-
-        context "and no gvimrc is specified" do
-          let(:gvimrc) { nil }
-
-          it "uses an empty gvimrc, since the default gvimrc might depend on the default vimrc" do
-            empty_gvimrc = Vimbot::Server::EMPTY_GVIMRC
-            expect_vim_command_to_match /-U #{empty_gvimrc}/
-          end
-        end
-
-        context "and a gvimrc is specified" do
-          let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
-
-          it "uses the specified gvimrc file" do
-            expect_vim_command_to_match /-U #{gvimrc}/
-          end
-        end
       end
 
       context "when no vimrc is specified" do
         let(:vimrc) { nil }
 
-        it "uses the default vimrc" do
-          expect_vim_command_not_to_match /-u/
+        it "uses an empty vimrc" do
+          empty_vimrc = Vimbot::Server::EMPTY_VIMSCRIPT
+          IO.read(empty_vimrc).should be_empty
+          expect_vim_command_to_match /-u #{empty_vimrc}/
         end
+      end
 
-        context "and no gvimrc is specified" do
-          let(:gvimrc) { nil }
+      context "when a gvimrc is specified" do
+        let(:gvimrc) { File.expand_path('../../fixtures/foo.vim', __FILE__) }
 
-          it "uses the default gvimrc" do
-            expect_vim_command_not_to_match /-U/
-          end
+        it "uses the specificied gvimrc" do
+          expect_vim_command_to_match /-U #{vimrc}/
         end
+      end
 
-        context "and a gvimrc is specified" do
-          let(:gvimrc) { File.expand_path('../../fixtures/bar.vim', __FILE__) }
+      context "when no gvimrc is specified" do
+        let(:gvimrc) { nil }
 
-          it "uses the specified gvimrc" do
-            expect_vim_command_to_match /-U #{gvimrc}/
-          end
+        it "uses an empty gvimrc" do
+          empty_gvimrc = Vimbot::Server::EMPTY_VIMSCRIPT
+          expect_vim_command_to_match /-U #{empty_gvimrc}/
         end
       end
     end

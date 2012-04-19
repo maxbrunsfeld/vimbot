@@ -51,7 +51,7 @@ module Vimbot
     @@next_id = 0
 
     DEFAULT_VIM_BINARIES = ["vim", "mvim", "gvim"]
-    EMPTY_GVIMRC       = File.expand_path("../../../vim/empty.vim", __FILE__)
+    EMPTY_VIMSCRIPT = File.expand_path("../../../vim/empty.vim", __FILE__)
 
     def wait_until_up
       sleep 0.25 until up?
@@ -73,11 +73,8 @@ module Vimbot
     end
 
     def set_config_files(vimrc, gvimrc)
-      @vimrc = vimrc
-      @gvimrc = gvimrc
-      if vimrc && !gvimrc
-        @gvimrc = EMPTY_GVIMRC
-      end
+      @vimrc  = vimrc  || EMPTY_VIMSCRIPT
+      @gvimrc = gvimrc || EMPTY_VIMSCRIPT
     end
 
     def binary_supports_server_mode?(binary)
