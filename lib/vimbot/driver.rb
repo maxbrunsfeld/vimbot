@@ -32,7 +32,7 @@ module Vimbot
     end
 
     def clear_buffer
-      raw_type '<Esc>gg"_dG<Esc>'
+      normal 'gg"_dG'
     end
 
     def source(file);  command "source #{file}";   end
