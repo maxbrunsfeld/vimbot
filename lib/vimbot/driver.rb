@@ -35,9 +35,8 @@ module Vimbot
       raw_type '<Esc>gg"_dG<Esc>'
     end
 
-    def source(file)
-      command "source #{file}"
-    end
+    def source(file);  command "source #{file}";   end
+    def runtime(file); command "runtime #{file}"; end
 
     def line
       evaluate("getline('.')")
