@@ -16,16 +16,16 @@ module Vimbot
 
     def stop
       return unless @pid
-      run "<Esc>:qall!<CR>"
+      remote_send "<Esc>:qall!<CR>"
       Process.wait(@pid)
       @pid = nil
     end
 
-    def run(command)
       system "#{command_prefix} --remote-send #{escape(command)}"
+    def remote_send(command)
     end
 
-    def evaluate(expression)
+    def remote_expr(expression)
       output, error = Open3.capture3 "#{command_prefix} --remote-expr #{escape(expression)}"
       raise InvalidExpression unless error.empty?
       output.gsub(/\n$/, "")

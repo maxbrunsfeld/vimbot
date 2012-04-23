@@ -26,14 +26,13 @@ describe Vimbot::Driver do
     after(:all)  { driver.stop }
 
     before do
-      # puts driver.mode
       driver.set "nocompatible"
       driver.clear_buffer
     end
 
     describe "#raw_type" do
       it "concatenates its arguments before sending them to the server" do
-        driver.server.should_receive(:run).once.with("OneTwoThreeFour")
+        driver.server.should_receive(:remote_send).once.with("OneTwoThreeFour")
         driver.raw_type "One", "Two", "Three", "Four"
       end
     end

@@ -106,11 +106,11 @@ module Vimbot
     end
 
     def raw_type(*commands)
-      server.run(commands.join)
+      server.remote_send(commands.join)
     end
 
     def evaluate(expr)
-      server.evaluate(expr)
+      server.remote_expr(expr)
     end
 
     def set(option, value=nil)

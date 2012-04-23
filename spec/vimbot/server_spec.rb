@@ -213,54 +213,54 @@ describe Vimbot::Server do
     before(:all) { server.start }
     after(:all)  { server.stop }
 
-    describe "#evaluate" do
+    describe "#remote_expr" do
       it "returns the result of the given vimscript expression" do
-        server.evaluate("8 + 1").should == "9"
-        server.evaluate("len([1, 2, 3, 4, 5])").should == "5"
+        server.remote_expr("8 + 1").should == "9"
+        server.remote_expr("len([1, 2, 3, 4, 5])").should == "5"
       end
 
       it "handles expressions containing single quotes" do
-        server.evaluate("'foo' . 'bar' . 'baz'").should == "foobarbaz"
+        server.remote_expr("'foo' . 'bar' . 'baz'").should == "foobarbaz"
       end
 
       it "handles expressions containing double quotes" do
-        server.evaluate('"foo" . "bar" . "baz"').should == "foobarbaz"
+        server.remote_expr('"foo" . "bar" . "baz"').should == "foobarbaz"
       end
 
       it "handles expressions that return empty strings" do
-        server.evaluate("[]").should == ""
+        server.remote_expr("[]").should == ""
       end
 
       it "raises an exception for invalid expressions" do
         expect {
-          server.evaluate("1 + []")
+          server.remote_expr("1 + []")
         }.to raise_error Vimbot::InvalidExpression
       end
     end
 
-    describe "#run" do
-      before { server.run "<Esc>dd" }
+    describe "#remote_send" do
+      before { server.remote_send "<Esc>dd" }
 
       it "sends the given keystrokes to the vim server" do
-        server.run "i"
-        server.run "foo"
+        server.remote_send "i"
+        server.remote_send "foo"
         current_line.should == "foo"
       end
 
       it "handles commands containing single quotes" do
-        server.run "i"
-        server.run "who's that?"
+        server.remote_send "i"
+        server.remote_send "who's that?"
         current_line.should == "who's that?"
       end
 
       it "handles expressions containing double quotes" do
-        server.run "i"
-        server.run 'foo "bar"'
+        server.remote_send "i"
+        server.remote_send 'foo "bar"'
         current_line.should == 'foo "bar"'
       end
 
       def current_line
-        server.evaluate "getline('.')"
+        server.remote_expr "getline('.')"
       end
     end
   end
