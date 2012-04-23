@@ -21,8 +21,10 @@ module Vimbot
       @pid = nil
     end
 
-      system "#{command_prefix} --remote-send #{escape(command)}"
     def remote_send(command)
+      output, error = Open3.capture3 "#{command_prefix} --remote-send #{escape(command)}"
+      raise InvalidInput unless error.empty?
+      nil
     end
 
     def remote_expr(expression)
@@ -110,6 +112,7 @@ module Vimbot
   end
 
   class InvalidExpression < Exception; end
+  class InvalidInput < Exception; end
 
   class IncompatibleVim < Exception
     def initialize(binary)

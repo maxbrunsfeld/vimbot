@@ -259,6 +259,10 @@ describe Vimbot::Server do
         current_line.should == 'foo "bar"'
       end
 
+      it "raises an exception with malformed input" do
+        expect { server.remote_send "<Esc" }.to raise_error Vimbot::InvalidInput
+      end
+
       def current_line
         server.remote_expr "getline('.')"
       end
