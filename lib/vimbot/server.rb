@@ -27,11 +27,8 @@ module Vimbot
 
     def evaluate(expression)
       output, error = Open3.capture3 "#{command_prefix} --remote-expr #{escape(expression)}"
-      if error.empty?
-        output.gsub(/\n$/, "")
-      else
-        errors.push(error) && nil
-      end
+      raise InvalidExpression unless error.empty?
+      output.gsub(/\n$/, "")
     end
 
     def name
@@ -62,13 +59,11 @@ module Vimbot
         if binary_supports_server_mode?(binary)
           @vim_binary = binary
         else
-          raise "Error - vim binary '#{binary}' does not support client-server mode."
+          raise IncompatibleVim.new(binary)
         end
       else
         @vim_binary = DEFAULT_VIM_BINARIES.find {|binary| binary_supports_server_mode?(binary)}
-        unless @vim_binary
-          raise "Error - couldn't find a vim binary that supports client-server mode."
-        end
+        raise NoCompatibleVim unless @vim_binary
       end
     end
 
@@ -113,4 +108,23 @@ module Vimbot
       `#{vim_binary} --serverlist`.split("\n")
     end
   end
+
+  class InvalidExpression < Exception; end
+
+  class IncompatibleVim < Exception
+    def initialize(binary)
+      @binary = binary
+    end
+
+    def message
+      "Vim binary '#{@binary}' does not support client-server mode."
+    end
+  end
+
+  class NoCompatibleVim < Exception
+    def message
+      "Couldn't find a vim binary that supports client-server mode"
+    end
+  end
 end
+

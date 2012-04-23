@@ -47,7 +47,9 @@ describe Vimbot::Server do
       context "and the binary does not support client-server mode" do
         it "raises an exception" do
           vim_binary = File.expand_path("../../fixtures/fake_vim_without_server_mode", __FILE__)
-          expect { Server.new(:vim_binary => vim_binary) }.to raise_error
+          expect {
+            Vimbot::Server.new(:vim_binary => vim_binary)
+          }.to raise_error Vimbot::IncompatibleVim
         end
       end
     end
@@ -93,7 +95,7 @@ describe Vimbot::Server do
         let(:gvim_has_server_mode) { false }
 
         it "raises an exception" do
-          expect { server }.to raise_error
+          expect { server }.to raise_error Vimbot::NoCompatibleVim
         end
       end
     end
@@ -225,28 +227,14 @@ describe Vimbot::Server do
         server.evaluate('"foo" . "bar" . "baz"').should == "foobarbaz"
       end
 
-      context "with an expression that yields an empty string" do
-        it "returns an empty string" do
-          server.evaluate("[]").should == ""
-        end
-
-        it "doesn't add to the server's errors" do
-          server.evaluate("[]")
-          server.errors.should be_empty
-        end
+      it "handles expressions that return empty strings" do
+        server.evaluate("[]").should == ""
       end
 
-      context "with an invalid expression" do
-        before { server.errors.clear }
-
-        it "returns false" do
-          server.evaluate("1 + []").should be_false
-        end
-
-        it "adds an entry to the server's errors" do
+      it "raises an exception for invalid expressions" do
+        expect {
           server.evaluate("1 + []")
-          server.errors.length.should == 1
-        end
+        }.to raise_error Vimbot::InvalidExpression
       end
     end
 
