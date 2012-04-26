@@ -49,7 +49,7 @@ module Vimbot
 
     @@next_id = 0
 
-    DEFAULT_VIM_BINARIES = ["vim", "mvim", "gvim"]
+    DEFAULT_VIM_BINARIES = %w(vim mvim gvim)
     EMPTY_VIMSCRIPT = File.expand_path("../../../vim/empty.vim", __FILE__)
 
     def wait_until_up
