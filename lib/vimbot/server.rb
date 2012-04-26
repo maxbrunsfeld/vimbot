@@ -83,19 +83,11 @@ module Vimbot
     end
 
     def start_command
-      [command_prefix, no_fork_option, vimrc_option, gvimrc_option].compact.join(" ")
+      "#{command_prefix} #{no_fork_option} -u #{vimrc} -U #{gvimrc}"
     end
 
     def no_fork_option
       "--nofork" if binary_has_no_fork_option?
-    end
-
-    def gvimrc_option
-      "-U #{gvimrc}" if gvimrc
-    end
-
-    def vimrc_option
-      "-u #{vimrc}" if vimrc
     end
 
     def escape(string)
