@@ -13,6 +13,10 @@ describe Vimbot::Driver do
       driver.server.should be_up
     end
 
+    it "turns off vi compatibility" do
+      driver.command("set compatible?").should include "nocompatible"
+    end
+
     describe "#stop" do
       it "stops the server" do
         driver.stop

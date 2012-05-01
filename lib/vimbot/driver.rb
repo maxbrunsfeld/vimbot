@@ -133,7 +133,11 @@ module Vimbot
         gsub(/<[^>]+>/, '\\\\\0')
     end
 
-    def start; server.start; end
+    def start
+      server.start
+      set "nocompatible"
+    end
+
     def stop;  server.stop;  end
   end
 end
