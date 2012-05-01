@@ -10,7 +10,7 @@ module Vimbot
 
     def start
       return if @pid
-      @pid = fork { exec start_command }
+      @pid = fork { exec "#{command_prefix} --nofork -u #{vimrc} -U #{gvimrc}" }
       wait_until_up
     end
 
@@ -50,7 +50,7 @@ module Vimbot
     @@next_id = 0
 
     DEFAULT_VIM_BINARIES = %w(vim mvim gvim)
-    EMPTY_VIMSCRIPT = File.expand_path("../../../vim/empty.vim", __FILE__)
+    EMPTY_VIMSCRIPT = File.expand_path("vim/empty.vim", Vimbot::GEM_ROOT)
 
     def wait_until_up
       sleep 0.25 until up?
@@ -76,18 +76,6 @@ module Vimbot
 
     def binary_supports_server_mode?(binary)
       !(`#{binary} --help | grep -e --server`).empty?
-    end
-
-    def binary_has_no_fork_option?
-      !(`#{vim_binary} --help | grep -e --nofork`).empty?
-    end
-
-    def start_command
-      "#{command_prefix} #{no_fork_option} -u #{vimrc} -U #{gvimrc}"
-    end
-
-    def no_fork_option
-      "--nofork" if binary_has_no_fork_option?
     end
 
     def escape(string)

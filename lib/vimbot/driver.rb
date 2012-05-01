@@ -25,17 +25,18 @@ module Vimbot
 
     def command(command)
       normal
-      raw_command("redir => #{TEMP_VARIABLE_NAME}")
+      temp_variable_name = "vimbot_temp"
+      raw_command("redir => #{temp_variable_name}")
       raw_command("silent #{command}")
       raw_command("redir END")
-      evaluate(TEMP_VARIABLE_NAME).gsub(/^\n/, "")
+      evaluate(temp_variable_name).gsub(/^\n/, "")
     end
 
     def clear_buffer
       normal 'gg"_dG'
     end
 
-    def source(file);  command "source #{file}";   end
+    def source(file);  command "source #{file}";  end
     def runtime(file); command "runtime #{file}"; end
 
     def line
@@ -117,8 +118,6 @@ module Vimbot
       cmd = [option, value].compact.join("=")
       raw_command "set #{cmd}"
     end
-
-    TEMP_VARIABLE_NAME = "vimbot_temp"
 
     def undo_levels
       @undo_levels ||= evaluate("&ul")

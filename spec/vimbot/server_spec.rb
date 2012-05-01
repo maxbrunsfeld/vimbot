@@ -27,20 +27,8 @@ describe Vimbot::Server do
           expect_vim_command_to_match /^#{vim_binary}/
         end
 
-        context "when the version has a '--nofork' option" do
-          let(:vim_binary) { File.expand_path("../../fixtures/fake_vim", __FILE__) }
-
-          it "passes that option" do
-            expect_vim_command_to_match /--nofork/
-          end
-        end
-
-        context "when the version does not have a '--nofork' option" do
-          let(:vim_binary) { File.expand_path("../../fixtures/fake_vim_without_nofork", __FILE__) }
-
-          it "omits that option" do
-            expect_vim_command_not_to_match /--nofork/
-          end
+        it "passes the '--nofork' option" do
+          expect_vim_command_to_match /--nofork/
         end
       end
 
@@ -143,12 +131,6 @@ describe Vimbot::Server do
 
     def expect_vim_command_to_match(pattern)
       server.should_receive(:exec).once.with(pattern)
-      server.start
-    end
-
-    def expect_vim_command_not_to_match(pattern)
-      server.should_receive(:exec).once
-      server.should_not_receive(:exec).with(pattern)
       server.start
     end
   end
