@@ -119,29 +119,19 @@ module Vimbot
     end
 
     TEMP_VARIABLE_NAME = "vimbot_temp"
-    SPECIAL_CHARACTERS  = %w(CR Cr cr ESC Esc esc Space space LEFT Left RIGHT Right Home HOME home End end END)
-    MODIFIER_CHARACTERS = %w(C D M S)
-
-    VIM_PATTERNS = [
-      SPECIAL_CHARACTERS.map  {|char| /<(#{char})>/},
-      MODIFIER_CHARACTERS.map {|char| /<(#{char}-\w+)>/}
-    ].flatten
 
     def undo_levels
       @undo_levels ||= evaluate("&ul")
     end
 
     def escape_command(string)
-      string.tap do |string|
-        VIM_PATTERNS.each { |pattern| string.gsub!(pattern, '<\1_<BS>>') }
-      end
+      string.gsub(/<((\w+-)*\w+)>/, '<\1_<bs>>')
     end
 
     def escape_argument(string)
-      string.tap do |string|
-        string.gsub!(/[()"]/, '\\\\\0')
-        string.gsub!(/<[^>]+>/, '\\\\\0')
-      end
+      string.
+        gsub(/[()"]/, '\\\\\0').
+        gsub(/<[^>]+>/, '\\\\\0')
     end
 
     def start; server.start; end
