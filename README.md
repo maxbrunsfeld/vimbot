@@ -4,30 +4,38 @@
 
 Start up a vim application like this:
 
-    > vim = Vimbot::Driver.new
-    > vim.start
+```ruby
+vim = Vimbot::Driver.new
+vim.start
+```
 
 When you want to quit vim,
 
-    > vim.stop
+```ruby
+> vim.stop
+```
 
 By default, Vimbot will try to guess what vim application to use,
 and use an *empty* `.vimrc` and `.gvimrc`. If you want to specify a
 vim binary or some config files, you can do this:
 
-    > vim = Vimbot::Driver.new(
-      :vim => "bin/my_vim",
-      :vimrc => "~/.vimrc",
-      :gvimrc => ".alternative_gvimrc"
-    )
+```ruby
+> vim = Vimbot::Driver.new(
+  :vim => "bin/my_vim",
+  :vimrc => "~/.vimrc",
+  :gvimrc => ".alternative_gvimrc"
+)
+```
 
 From there, you can begin editing:
 
-    > vim.type "i", "Hey vim users,"
-    > vim.append "<CR><CR>", "Try testing your vim plugins with vimbot!"
-    > vim.command "%s/vim/best_editor_ever/g"
+```ruby
+> vim.type "i", "Hey vim users,"
+> vim.append "<CR><CR>", "Try testing your vim plugins with vimbot!"
+> vim.command "%s/vim/best_editor_ever/g"
 
-    => "2 substitutions on 2 lines"
+=> "2 substitutions on 2 lines"
+```
 
 ## API
 
