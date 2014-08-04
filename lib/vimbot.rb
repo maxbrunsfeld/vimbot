@@ -1,4 +1,6 @@
-Vimbot::GEM_ROOT = File.expand_path("../..", __FILE__)
+module Vimbot
+  GEM_ROOT = File.expand_path("../..", __FILE__)
+end
 
 require "shellwords"
 require "open3"
